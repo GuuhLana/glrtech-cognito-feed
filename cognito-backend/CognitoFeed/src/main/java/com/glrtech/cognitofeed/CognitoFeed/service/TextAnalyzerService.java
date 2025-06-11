@@ -3,10 +3,11 @@ package com.glrtech.cognitofeed.CognitoFeed.service;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -17,25 +18,33 @@ import com.glrtech.cognitofeed.CognitoFeed.dto.AnswerAnalyzeDTO;
 @Service
 public class TextAnalyzerService {
 
-	@Autowired
-	private RestTemplate restTemplate;
+    private static final Logger logger = LoggerFactory.getLogger(TextAnalyzerService.class);
 
-	private static final String IA_API_URL = "http://localhost:8000/analyze";
+    @Autowired
+    private RestTemplate restTemplate;
 
-	public AnswerAnalyzeDTO textAnalyzer(String text) {
-		// Correção: usar HashMap explicitamente para evitar inferência problemática
-		Map<String, String> requestBody = new HashMap<>();
-		requestBody.put("text", text);
+    private static final String IA_API_URL = "http://localhost:8000/analyze";
 
-		// Correção: headers corretamente instanciado
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
+    public AnswerAnalyzeDTO textAnalyzer(String text) {
+        logger.info("Sending text to NLP API for analysis...");
 
-		HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("text", text);
 
-		ResponseEntity<AnswerAnalyzeDTO> response = restTemplate.postForEntity(IA_API_URL, request,
-				AnswerAnalyzeDTO.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-		return response.getBody();
-	}
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
+
+        try {
+            ResponseEntity<AnswerAnalyzeDTO> response = restTemplate.postForEntity(
+                IA_API_URL, request, AnswerAnalyzeDTO.class
+            );
+            logger.info("NLP API response received successfully.");
+            return response.getBody();
+        } catch (Exception e) {
+            logger.error("Error while calling NLP service: {}", e.getMessage());
+            throw new RuntimeException("Failed to communicate with NLP service", e);
+        }
+    }
 }
